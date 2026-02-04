@@ -344,21 +344,27 @@ This is the simplest method and automatically handles all packaging requirements
 
 ### Option 3: GitHub Actions Deployment
 
-1) Generate publish profile:
+1) Create a Service Principal for GitHub Actions:
 
    ```bash
-   az functionapp deployment list-publishing-profiles \
-     --name $functionAppName \
-     --resource-group $resourceGroup \
-     --xml > PublishProfile.xml
+   az ad sp create-for-rbac --name "github-actions-sp" \
+     --role contributor \
+     --scopes /subscriptions/<subscription-id>/resourceGroups/<rg> \
+     --sdk-auth
    ```
+
+   Copy the JSON output for the next step.
 
 2) Add repository secrets in GitHub:
 
-   - `AZURE_FUNCTIONAPP_PUBLISH_PROFILE`: Copy contents of `PublishProfile.xml`
-   - `AZURE_FUNCTIONAPP_NAME`: Your function app name (e.g., `tmdemo-func`)
+   - `AZURE_CREDENTIALS`: Paste the Service Principal JSON from step 1
 
-3) Create `.github/workflows/functionapp-ci.yml`:
+3) (Optional) Add repository variables for custom values:
+
+   - `AZURE_RESOURCE_GROUP`: Your resource group name (default: `rg-tmdemo02041702`)
+   - `AZURE_FUNCTIONAPP_NAME`: Your function app name (default: `teledemo02041702-func`)
+
+4) Create `.github/workflows/functionapp-ci.yml`:
 
    ```yaml
    name: Deploy Function App (Flex Consumption)
@@ -369,10 +375,14 @@ This is the simplest method and automatically handles all packaging requirements
          - main
        paths:
          - 'functionapp/**'
+         - '.github/workflows/functionapp-ci.yml'
 
    jobs:
      build-and-deploy:
        runs-on: ubuntu-latest
+       env:
+         AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-tmdemo02041702' }}
+         AZURE_FUNCTIONAPP_NAME: ${{ vars.AZURE_FUNCTIONAPP_NAME || 'teledemo02041702-func' }}
        steps:
          - name: Checkout
            uses: actions/checkout@v4
@@ -391,15 +401,25 @@ This is the simplest method and automatically handles all packaging requirements
          - name: Publish
            run: dotnet publish functionapp/Telemetry.FunctionApp.csproj -c Release -o functionapp/publish
 
-         - name: Deploy to Azure Functions
-           uses: Azure/functions-action@v1
+         - name: Zip publish folder
+           run: |
+             cd functionapp/publish
+             zip -r ../publish.zip .
+
+         - name: Login to Azure
+           uses: azure/login@v1
            with:
-             app-name: ${{ secrets.AZURE_FUNCTIONAPP_NAME }}
-             publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-             package: functionapp/publish
+             creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+         - name: Deploy to Azure Functions
+           run: |
+             az functionapp deployment source config-zip \
+               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+               --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
+               --src functionapp/publish.zip
    ```
 
-4) Commit and push to trigger the workflow:
+5) Commit and push to trigger the workflow:
 
    ```bash
    git add .github/workflows/functionapp-ci.yml
