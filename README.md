@@ -87,7 +87,7 @@ Before deploying the Bicep template, ensure you have:
    ```
 
    > Note: This deployment takes 15-20 minutes. Monitor progress in Azure Portal under Resource Group → Deployments.
-
+   >
 4) Save the output values (you'll need these for Phase 2):
 
    ```bash
@@ -115,6 +115,7 @@ az deployment group create \
 ### Bicep Resources Created
 
 **Phase 1 (main.bicep + network.bicep)**:
+
 - **VNet** (10.10.0.0/16) with 3 subnets:
   - snet-apim-outbound (10.10.1.0/24) - delegated to Microsoft.Web/serverFarms
   - snet-function (10.10.2.0/24) - delegated to Microsoft.App/environments
@@ -132,6 +133,7 @@ az deployment group create \
 - **Role Assignments** for Function App managed identity (Storage Blob Data Owner, Cosmos DB Data Contributor)
 
 **Phase 2 (apim-policy.bicep)**:
+
 - **APIM Backend** - Function App backend with host key authentication
 - **APIM Operation Policy** - Routes POST /telemetry requests to Function App backend
 
@@ -160,14 +162,12 @@ The Function App uses **Managed Identity** for Cosmos DB authentication (no conn
    ```
 
    Verify: `func --version`
-
 2. **.NET 8 SDK**
 
    ```bash
    # Verify
    dotnet --version
    ```
-
 3. **Cosmos DB Emulator** (for local testing)
 
    - Download from: https://learn.microsoft.com/en-us/azure/cosmos-db/emulator
@@ -181,18 +181,15 @@ The Function App uses **Managed Identity** for Cosmos DB authentication (no conn
    ```bash
    cd functionapp
    ```
-
 2) Restore NuGet packages:
 
    ```bash
    dotnet restore
    ```
-
 3) Start the Cosmos DB Emulator (if you don't have it running):
 
    - Windows: Launch the Emulator application from Start Menu
    - Or check: `https://localhost:8081/_explorer/index.html`
-
 4) Run the Function locally:
 
    ```bash
@@ -210,10 +207,10 @@ The Function App uses **Managed Identity** for Cosmos DB authentication (no conn
    ```
 
    The first invocation will:
+
    - Create the Cosmos DB `telemetrydb` database (if not exists)
    - Create the `telemetry` container (if not exists)
    - Initialize the Cosmos DB client
-
 5) The function is now listening at `http://localhost:7071/api/telemetry`
 
 ### Testing the Function Locally
@@ -310,7 +307,6 @@ This is the simplest method and automatically handles all packaging requirements
    cd functionapp
    dotnet publish -c Release
    ```
-
 2) Deploy using Azure Functions Core Tools:
 
    ```bash
@@ -321,7 +317,6 @@ This is the simplest method and automatically handles all packaging requirements
    # Deploy directly (handles .azurefunctions metadata automatically)
    func azure functionapp publish $functionAppName
    ```
-
 3) Verify deployment:
 
    ```bash
@@ -335,8 +330,8 @@ This is the simplest method and automatically handles all packaging requirements
 ### Option 2: VS Code Azure Functions Extension
 
 1) Install extension: **Azure Functions** (ms-azuretools.vscode-azurefunctions)
-
 2) In VS Code:
+
    - Open Command Palette: `Ctrl+Shift+P`
    - Search: "Azure Functions: Deploy to Function App"
    - Select your subscription and function app
@@ -354,16 +349,13 @@ This is the simplest method and automatically handles all packaging requirements
    ```
 
    Copy the JSON output for the next step.
-
 2) Add repository secrets in GitHub:
 
    - `AZURE_CREDENTIALS`: Paste the Service Principal JSON from step 1
-
 3) (Optional) Add repository variables for custom values:
 
    - `AZURE_RESOURCE_GROUP`: Your resource group name (default: `rg-tmdemo02041702`)
    - `AZURE_FUNCTIONAPP_NAME`: Your function app name (default: `teledemo02041702-func`)
-
 4) Create `.github/workflows/functionapp-ci.yml`:
 
    ```yaml
@@ -407,18 +399,17 @@ This is the simplest method and automatically handles all packaging requirements
              zip -r ../publish.zip .
 
          - name: Login to Azure
-           uses: azure/login@v1
+           uses: azure/login@v2
            with:
              creds: ${{ secrets.AZURE_CREDENTIALS }}
 
          - name: Deploy to Azure Functions
-           run: |
-             az functionapp deployment source config-zip \
-               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-               --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
-               --src functionapp/publish.zip
+           uses: Azure/functions-action@v1
+           id: deploy-to-function-app
+           with:
+             app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+             package: functionapp/publish.zip
    ```
-
 5) Commit and push to trigger the workflow:
 
    ```bash
@@ -534,16 +525,17 @@ Or test via APIM gateway:
 ### Subnet Configuration
 
 - **snet-apim-outbound** (10.10.1.0/24)
+
   - Delegation: Microsoft.Web/serverFarms
   - Purpose: APIM Standard V2 outbound virtual network integration
   - NSG: Applied with required inbound/outbound rules
-  
 - **snet-function** (10.10.2.0/24)
+
   - Delegation: Microsoft.App/environments
   - Purpose: Function App (Flex Consumption) VNet integration
   - Service Endpoints: Microsoft.Storage
-
 - **snet-private-endpoint** (10.10.3.0/24)
+
   - Purpose: Private endpoints for Cosmos DB and Function App
   - Network Policies: Disabled for private endpoints
 
