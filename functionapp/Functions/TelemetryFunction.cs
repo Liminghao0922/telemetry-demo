@@ -20,7 +20,8 @@ public class TelemetryFunction
     public TelemetryFunction(
         CosmosClient cosmosClient,
         IConfiguration configuration,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory
+    )
     {
         _cosmosClient = cosmosClient;
         _configuration = configuration;
@@ -29,7 +30,8 @@ public class TelemetryFunction
 
     [Function("TelemetryIngest")]
     public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "telemetry")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "telemetry")] HttpRequestData req
+    )
     {
         var body = await new StreamReader(req.Body).ReadToEndAsync();
         if (string.IsNullOrWhiteSpace(body))
@@ -64,12 +66,14 @@ public class TelemetryFunction
         await container.CreateItemAsync(payload, new PartitionKey(payload.DeviceId));
 
         var response = req.CreateResponse(HttpStatusCode.Created);
-        await response.WriteAsJsonAsync(new
-        {
-            id = payload.Id,
-            deviceId = payload.DeviceId,
-            timestamp = payload.Timestamp
-        });
+        await response.WriteAsJsonAsync(
+            new
+            {
+                id = payload.Id,
+                deviceId = payload.DeviceId,
+                timestamp = payload.Timestamp,
+            }
+        );
 
         return response;
     }
@@ -99,7 +103,11 @@ public class TelemetryFunction
         return null;
     }
 
-    private static HttpResponseData CreateError(HttpRequestData req, HttpStatusCode status, string message)
+    private static HttpResponseData CreateError(
+        HttpRequestData req,
+        HttpStatusCode status,
+        string message
+    )
     {
         var response = req.CreateResponse(status);
         response.WriteString(message);
