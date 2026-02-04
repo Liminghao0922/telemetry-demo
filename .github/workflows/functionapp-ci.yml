@@ -6,10 +6,14 @@ on:
       - main
     paths:
       - 'functionapp/**'
+      - '.github/workflows/functionapp-ci.yml'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-tmdemo02041702' }}
+      AZURE_FUNCTIONAPP_NAME: ${{ vars.AZURE_FUNCTIONAPP_NAME || 'teledemo02041702-func' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,6 +45,6 @@ jobs:
       - name: Deploy to Azure Functions
         run: |
           az functionapp deployment source config-zip \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --name ${{ secrets.AZURE_FUNCTIONAPP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
             --src functionapp/publish.zip
