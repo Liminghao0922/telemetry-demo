@@ -37,10 +37,15 @@ jobs:
           cd functionapp/publish
           zip -r ../publish.zip .
 
+      - name: Log in to Azure with AZ CLI
+        uses: azure/login@v2
+        with:
+          cred-id: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to Azure Functions
         uses: Azure/functions-action@v1
+        id: deploy-to-function-app
         with:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
           package: functionapp/publish.zip
-          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
           sku: flexconsumption
