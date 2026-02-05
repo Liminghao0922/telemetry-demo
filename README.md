@@ -6,7 +6,7 @@ This demo provisions a production-grade telemetry ingestion pipeline:
 
 ![Architecture diagram](docs/architecture.png)
 
-- **API Management** (Standard V2 tier, External VNet mode with outbound integration)
+- **API Management** (Standard V2 tier, Outbound vnet integration)
 - **Function App** (Flex Consumption, .NET 8 isolated)
 - **Cosmos DB** (NoSQL) with container `telemetry` (partition key `/deviceId`)
 - **VNet Architecture** with 3 subnets:
@@ -121,7 +121,7 @@ az deployment group create \
   - snet-function (10.10.2.0/24) - delegated to Microsoft.App/environments
   - snet-private-endpoint (10.10.3.0/24) - for private endpoints
 - **NSG** for APIM outbound subnet with inbound/outbound rules
-- **APIM Service** (Standard V2, External VNet with outbound integration)
+- **APIM Service** (Standard V2, Outbound VNet integration)
 - **APIM API** (telemetry-api) with path `/telemetry`
 - **APIM Operation** (POST /telemetry)
 - **Function App** (Flex Consumption, VNet-integrated)
@@ -297,6 +297,24 @@ _logger.LogError(ex, "Failed to store telemetry");
 
 ## Build & Deploy the Function (CI/CD)
 
+> ⚠️ **Important Note on Network Access**
+>
+> After IaC deployment, the Function App has **public inbound access disabled** (only accessible via private endpoint). This is the recommended security posture for production.
+>
+> **For Development/Testing**:
+>
+> - To test the function locally or via direct URL, you can temporarily enable public access:
+>   ```bash
+>   az functionapp config set --name $functionAppName --resource-group $resourceGroup --public-network-access-enabled true
+>   ```
+> - Remember to disable it again after testing for security.
+>
+> **For Production Deployment**:
+>
+> - Use **GitHub Actions with Self-Hosted Runner** (see Option 3 below)
+> - Deploy a self-hosted runner VM in the same VNet to avoid public internet exposure
+> - This ensures your deployment pipeline stays within the secure VNet perimeter
+
 ### Option 1: Manual Deployment (Azure Functions Core Tools - Recommended)
 
 This is the simplest method and automatically handles all packaging requirements.
@@ -330,14 +348,36 @@ This is the simplest method and automatically handles all packaging requirements
 ### Option 2: VS Code Azure Functions Extension
 
 1) Install extension: **Azure Functions** (ms-azuretools.vscode-azurefunctions)
-2) In VS Code:
 
-   - Open Command Palette: `Ctrl+Shift+P`
-   - Search: "Azure Functions: Deploy to Function App"
-   - Select your subscription and function app
-   - Confirm deployment
+   ![1770282273197](image/README/1770282273197.png)
+2) In VS Code, right-click in the white space area in the **Explorer** tab and select **Deploy to Function App...**
 
-### Option 3: GitHub Actions Deployment
+   ![1770282422081](image/README/1770282422081.png)
+
+   Select your subscription and function app, then click **Deploy**
+
+   ![1770288683430](image/README/1770288683430.png)
+   ![1770288254002](image/README/1770288254002.png)
+3) Follow the deployment prompts
+
+   ![1770288458803](image/README/1770288458803.png)
+4) Confirm the deployment when prompted
+
+   ![1770288590220](image/README/1770288590220.png)
+
+### Option 3: GitHub Actions Deployment (with Self-Hosted Runner)
+
+For production deployments from a private VNet-secured environment, use a **GitHub Actions Self-Hosted Runner** deployed on a VM within the same VNet.
+
+#### Setup Self-Hosted Runner VM
+
+1) Create or use an existing VM in the `snet-function` subnet (same subnet as Function App)
+2) On the VM, register a self-hosted runner:
+   - Go to GitHub repo → Settings → Actions → Runners → New self-hosted runner
+   - Follow GitHub's instructions to register the runner on your VM
+   - Tag the runner (e.g., `vnet-runner`) for use in workflows
+
+#### Deploy Using Self-Hosted Runner
 
 1) Create a Service Principal for GitHub Actions:
 
@@ -356,7 +396,7 @@ This is the simplest method and automatically handles all packaging requirements
 
    - `AZURE_RESOURCE_GROUP`: Your resource group name (default: `rg-tmdemo02041702`)
    - `AZURE_FUNCTIONAPP_NAME`: Your function app name (default: `teledemo02041702-func`)
-4) Create `.github/workflows/functionapp-ci.yml`:
+4) Create `.github/workflows/functionapp-ci.yml` with self-hosted runner:
 
    ```yaml
    name: Deploy Function App (Flex Consumption)
@@ -371,7 +411,7 @@ This is the simplest method and automatically handles all packaging requirements
 
    jobs:
      build-and-deploy:
-       runs-on: ubuntu-latest
+       runs-on: [self-hosted, vnet-runner]
        env:
          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-tmdemo02041702' }}
          AZURE_FUNCTIONAPP_NAME: ${{ vars.AZURE_FUNCTIONAPP_NAME || 'teledemo02041702-func' }}
@@ -410,7 +450,7 @@ This is the simplest method and automatically handles all packaging requirements
              app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
              package: functionapp/publish.zip
    ```
-5) Commit and push to trigger the workflow:
+5) Commit and push to trigger the workflow on the self-hosted runner:
 
    ```bash
    git add .github/workflows/functionapp-ci.yml
