@@ -577,7 +577,9 @@ az monitor log-analytics query \
 
 ## Cost Optimization
 
-- **APIM Standard V2**: ~$0.40/hour (vs ~$0.59/hour for Developer)
+![1770273885443](image/README/1770273885443.png)
+
+- **APIM Standard V2**: ~$0.40/hour
 - **Flex Consumption**: Pay only for executed invocations
 - **Cosmos DB**: 400 RU/s (adjustable, pay per RU)
 - **Private Endpoint**: $0.01/hour
