@@ -16,6 +16,16 @@
                 <mxCell id="50" value="" style="edgeStyle=none;html=1;entryX=0.4;entryY=0.69;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=oval;endFill=1;endSize=16;fillColor=#1ba1e2;strokeColor=#006EAF;" parent="1" source="6" target="9" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
+                <mxCell id="63" value="&lt;span style=&quot;color: rgb(76, 76, 81); font-family: &amp;quot;Segoe UI&amp;quot;, SegoeUI, &amp;quot;Helvetica Neue&amp;quot;, Helvetica, Arial, sans-serif; font-size: 16px; text-align: left; text-wrap-mode: wrap;&quot;&gt;VNET integration&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=light-dark(#ffffff, #ededed);" vertex="1" connectable="0" parent="50">
+                    <mxGeometry x="-0.4188" relative="1" as="geometry">
+                        <mxPoint x="-1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="66" value="&lt;span style=&quot;color: rgb(76, 76, 81); font-family: &amp;quot;Segoe UI&amp;quot;, SegoeUI, &amp;quot;Helvetica Neue&amp;quot;, Helvetica, Arial, sans-serif; font-size: 16px; text-align: left; text-wrap-mode: wrap;&quot;&gt;VNET integration&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=light-dark(#FFFFFF,#EDEDED);" vertex="1" connectable="0" parent="50">
+                    <mxGeometry x="-0.4188" relative="1" as="geometry">
+                        <mxPoint x="336" y="98" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
                 <mxCell id="6" value="APIM" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/API_Management.svg;" parent="1" vertex="1">
                     <mxGeometry x="150" y="404.45" width="65" height="54.6" as="geometry"/>
                 </mxCell>
